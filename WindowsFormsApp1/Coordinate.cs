@@ -12,7 +12,6 @@ namespace WindowsFormsApp1
         public float X { get; set; }
         public float Y { get; set; }
         public int MaxWidth{ get; set; }
-        public int MaxHeight { get; set; }
 
         public bool IsTaken { get; set; }
 }

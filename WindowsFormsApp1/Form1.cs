@@ -14,8 +14,7 @@ namespace WindowsFormsApp1
     {
         Graphics gp;
         Pen pnLine = new Pen(Brushes.Black, (float)0.5);
-        Pen pnRec = new Pen(Brushes.Blue, 4);
-        List<Coordinate> coordinates = new List<Coordinate>();
+        RectangleManager recManager;
         public Form1()
         {
             InitializeComponent();
@@ -36,6 +35,7 @@ namespace WindowsFormsApp1
                 float y = 0f;
                 float xspace = panel1.Width / lines;
                 float yspace = panel1.Height / lines;
+                recManager = new RectangleManager(gp, lines, panel1.Width, panel1.Height);
 
                 for (int i = 0; i < (lines + 1); i++)
                 {
@@ -53,46 +53,14 @@ namespace WindowsFormsApp1
                 int counter = 1;
                 int multiplier = 0;
                 int maxWidth = lines;
-                int maxHeight = 0;
-                bool hasMax = false;
-                int sumPerCol = 0;
-                int baseCount = 0;
                 for (int i = 0; i < lines; i++)
                 {
                     for (int j = 0; j < lines; j++)
                     {
                         gp.DrawString(counter.ToString(), new Font("Arial", 12), Brushes.Black, x, y);
-                        coordinates.Add(new Coordinate() { ID = (counter - 1), X = x, Y = (multiplier * yspace), MaxWidth = maxWidth, MaxHeight = maxHeight});
+                        recManager.AddCoordinate(new Coordinate() { ID = (counter - 1), X = x, Y = (multiplier * yspace), MaxWidth = maxWidth});
                         x += xspace;
-                        counter++;                                              
-                        
-                        if (i == (lines - 1))
-                        {                            
-                            if (!hasMax)
-                            {
-                                for (int h = j; h < lines - 1; h++)
-                                {
-                                    sumPerCol += coordinates[h + lines].ID;
-                                    hasMax = true;                                
-                                }
-                            }
-                            else
-                            {
-                                for (int h = baseCount; h < (baseCount + lines); h++)
-                                {
-                                    if (coordinates.Count <= h)
-                                    {
-                                        break;
-                                    }
-                                    else
-                                    {
-                                        coordinates[h + lines].MaxHeight = sumPerCol;
-                                    }
-                                }
-                                baseCount += lines;
-                            }
-                            sumPerCol++;
-                        }
+                        counter++;
                     }
                     y += yspace;
                     x = 0f;
@@ -107,9 +75,6 @@ namespace WindowsFormsApp1
 
         private void button2_CreateRectangle(object sender, EventArgs e)
         {
-            var lines = Int32.Parse(txtGridCount.Text);
-            float xspace = panel1.Width / lines;
-            float yspace = panel1.Height / lines;
             var x = 0;
             var width = 0;
             var height = 0;
@@ -117,72 +82,19 @@ namespace WindowsFormsApp1
             Int32.TryParse(txtX.Text, out x);
             Int32.TryParse(txtWidth.Text, out width);
             Int32.TryParse(txtHeight.Text, out height);
-            var xcor = coordinates.Find(c => c.ID == (x-1));
 
-            //check for out of bounds
-            int baseCount = (xcor.ID + 1);
-            if((xcor.ID + width) >= xcor.MaxWidth)
-            {
-                MessageBox.Show("Rectangle will be out of bounds");
-                return;
-            }
-            for (int i = 1; i < height; i++)
-            {
-                baseCount += lines;
-            }
-            if (baseCount > xcor.MaxHeight)
-            {
-                MessageBox.Show("Rectangle will be out of bounds");
-                return;
-            }
+            var response = recManager.CreateRectangle(x, width, height);
 
-            //check for overlapping
-            bool isTaken = false;
-            baseCount = xcor.ID;
-            for (int i = xcor.ID; i < (xcor.ID + height); i++)
+            if(!response.IsSuccessful)
             {
-                for (int j = baseCount; j < (baseCount + width); j++)
-                {
-                    if (coordinates.Count <= j)
-                    {
-                        MessageBox.Show("Rectangle will be out of bounds");
-                        return;
-                    }
-                    var cor = coordinates.Find(c => c.ID == j);
-                    if(cor != null && cor.IsTaken)
-                    {
-                        isTaken = true;
-                        break;
-                    }
-                }
-                baseCount += lines;
-            }
-
-            if (!isTaken)
-            {
-                Rectangle rec = new Rectangle((int)(xcor.X), (int)(xcor.Y), (width) * (int)xspace, (int)yspace * height);
-                gp.DrawRectangle(pnRec, rec);
-                baseCount = xcor.ID;
-                for (int i = xcor.ID; i < (xcor.ID + height); i++)
-                {                    
-                    for (int j = baseCount; j < (baseCount + width); j++)
-                    {
-                        var cor = coordinates.Find(c => c.ID == j);
-                        cor.IsTaken = true;
-                    }
-                    baseCount += lines;
-                }
-            }
-            else
-            {
-                MessageBox.Show("Rectangle will overlap");
+                MessageBox.Show(response.Message);
             }
         }
 
         private void button1_Click(object sender, EventArgs e)
         {
             panel1.Refresh();
-            coordinates = new List<Coordinate>();
+            recManager.Coordinates = new List<Coordinate>();
         }
     }
 }
